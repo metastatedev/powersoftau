@@ -2,15 +2,15 @@ extern crate powersoftau;
 extern crate bellman;
 extern crate memmap;
 
-// use powersoftau::bn256::{Bn256CeremonyParameters};
-use powersoftau::small_bn256::{Bn256CeremonyParameters};
+// use powersoftau::bls12_381::{Bls12CeremonyParameters};
+use powersoftau::small_bls12_381::{Bls12CeremonyParameters};
 use powersoftau::batched_accumulator::{BachedAccumulator};
 use powersoftau::parameters::{UseCompression};
 use powersoftau::utils::{blank_hash};
 
 use std::fs::OpenOptions;
 use std::io::{Write};
-use bellman::pairing::bn256::Bn256;
+use bellman::pairing::bls12_381::Bls12;
 use memmap::*;
 
 use powersoftau::parameters::PowersOfTauParameters;
@@ -18,8 +18,8 @@ use powersoftau::parameters::PowersOfTauParameters;
 const COMPRESS_NEW_CHALLENGE: UseCompression = UseCompression::No;
 
 fn main() {
-    println!("Will generate an empty accumulator for 2^{} powers of tau", Bn256CeremonyParameters::REQUIRED_POWER);
-    println!("In total will generate up to {} powers", Bn256CeremonyParameters::TAU_POWERS_G1_LENGTH);
+    println!("Will generate an empty accumulator for 2^{} powers of tau", Bls12CeremonyParameters::REQUIRED_POWER);
+    println!("In total will generate up to {} powers", Bls12CeremonyParameters::TAU_POWERS_G1_LENGTH);
     
     let file = OpenOptions::new()
                             .read(true)
@@ -29,10 +29,10 @@ fn main() {
             
     let expected_challenge_length = match COMPRESS_NEW_CHALLENGE {
         UseCompression::Yes => {
-            Bn256CeremonyParameters::CONTRIBUTION_BYTE_SIZE - Bn256CeremonyParameters::PUBLIC_KEY_SIZE
+            Bls12CeremonyParameters::CONTRIBUTION_BYTE_SIZE - Bls12CeremonyParameters::PUBLIC_KEY_SIZE
         },
         UseCompression::No => {
-            Bn256CeremonyParameters::ACCUMULATOR_BYTE_SIZE
+            Bls12CeremonyParameters::ACCUMULATOR_BYTE_SIZE
         }
     };
 
@@ -57,12 +57,12 @@ fn main() {
         println!("");
     }
 
-    BachedAccumulator::<Bn256, Bn256CeremonyParameters>::generate_initial(&mut writable_map, COMPRESS_NEW_CHALLENGE).expect("generation of initial accumulator is successful");
+    BachedAccumulator::<Bls12, Bls12CeremonyParameters>::generate_initial(&mut writable_map, COMPRESS_NEW_CHALLENGE).expect("generation of initial accumulator is successful");
     writable_map.flush().expect("unable to flush memmap to disk");
 
     // Get the hash of the contribution, so the user can compare later
     let output_readonly = writable_map.make_read_only().expect("must make a map readonly");
-    let contribution_hash = BachedAccumulator::<Bn256, Bn256CeremonyParameters>::calculate_hash(&output_readonly);
+    let contribution_hash = BachedAccumulator::<Bls12, Bls12CeremonyParameters>::calculate_hash(&output_readonly);
 
     println!("Empty contribution is formed with a hash:");
 

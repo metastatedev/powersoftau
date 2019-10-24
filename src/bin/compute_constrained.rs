@@ -5,14 +5,14 @@ extern crate rand;
 extern crate blake2;
 extern crate byteorder;
 
-// use powersoftau::bn256::{Bn256CeremonyParameters};
-use powersoftau::small_bn256::{Bn256CeremonyParameters};
+//use powersoftau::bls12_381::{Bls12CeremonyParameters};
+use powersoftau::small_bls12_381::{Bls12CeremonyParameters};
 use powersoftau::batched_accumulator::{BachedAccumulator};
 use powersoftau::keypair::{keypair};
 use powersoftau::parameters::{UseCompression, CheckForCorrectness};
 
 use std::fs::OpenOptions;
-use bellman::pairing::bn256::Bn256;
+use bellman::pairing::bls12_381::Bls12;
 use memmap::*;
 
 use std::io::{Read, Write};
@@ -24,8 +24,8 @@ const COMPRESS_THE_OUTPUT: UseCompression = UseCompression::Yes;
 const CHECK_INPUT_CORRECTNESS: CheckForCorrectness = CheckForCorrectness::No;
 
 fn main() {
-    println!("Will contribute to accumulator for 2^{} powers of tau", Bn256CeremonyParameters::REQUIRED_POWER);
-    println!("In total will generate up to {} powers", Bn256CeremonyParameters::TAU_POWERS_G1_LENGTH);
+    println!("Will contribute to accumulator for 2^{} powers of tau", Bls12CeremonyParameters::REQUIRED_POWER);
+    println!("In total will generate up to {} powers", Bls12CeremonyParameters::TAU_POWERS_G1_LENGTH);
     
     // Create an RNG based on a mixture of system randomness and user provided randomness
     let mut rng = {
@@ -74,10 +74,10 @@ fn main() {
         let metadata = reader.metadata().expect("unable to get filesystem metadata for `./challenge`");
         let expected_challenge_length = match INPUT_IS_COMPRESSED {
             UseCompression::Yes => {
-                Bn256CeremonyParameters::CONTRIBUTION_BYTE_SIZE
+                Bls12CeremonyParameters::CONTRIBUTION_BYTE_SIZE
             },
             UseCompression::No => {
-                Bn256CeremonyParameters::ACCUMULATOR_BYTE_SIZE
+                Bls12CeremonyParameters::ACCUMULATOR_BYTE_SIZE
             }
         };
 
@@ -97,10 +97,10 @@ fn main() {
 
     let required_output_length = match COMPRESS_THE_OUTPUT {
         UseCompression::Yes => {
-            Bn256CeremonyParameters::CONTRIBUTION_BYTE_SIZE
+            Bls12CeremonyParameters::CONTRIBUTION_BYTE_SIZE
         },
         UseCompression::No => {
-            Bn256CeremonyParameters::ACCUMULATOR_BYTE_SIZE + Bn256CeremonyParameters::PUBLIC_KEY_SIZE
+            Bls12CeremonyParameters::ACCUMULATOR_BYTE_SIZE + Bls12CeremonyParameters::PUBLIC_KEY_SIZE
         }
     };
 
@@ -111,7 +111,7 @@ fn main() {
     println!("Calculating previous contribution hash...");
 
     assert!(UseCompression::No == INPUT_IS_COMPRESSED, "Hashing the compressed file in not yet defined");
-    let current_accumulator_hash = BachedAccumulator::<Bn256, Bn256CeremonyParameters>::calculate_hash(&readable_map);
+    let current_accumulator_hash = BachedAccumulator::<Bls12, Bls12CeremonyParameters>::calculate_hash(&readable_map);
 
     {
         println!("`challenge` file contains decompressed points and has a hash:");
@@ -156,7 +156,7 @@ fn main() {
     println!("Computing and writing your contribution, this could take a while...");
 
     // this computes a transformation and writes it
-    BachedAccumulator::<Bn256, Bn256CeremonyParameters>::transform(
+    BachedAccumulator::<Bls12, Bls12CeremonyParameters>::transform(
         &readable_map, 
         &mut writable_map, 
         INPUT_IS_COMPRESSED, 
@@ -168,13 +168,13 @@ fn main() {
     println!("Finihsing writing your contribution to `./response`...");
 
     // Write the public key
-    pubkey.write::<Bn256CeremonyParameters>(&mut writable_map, COMPRESS_THE_OUTPUT).expect("unable to write public key");
+    pubkey.write::<Bls12CeremonyParameters>(&mut writable_map, COMPRESS_THE_OUTPUT).expect("unable to write public key");
 
     writable_map.flush().expect("must flush a memory map");
 
     // Get the hash of the contribution, so the user can compare later
     let output_readonly = writable_map.make_read_only().expect("must make a map readonly");
-    let contribution_hash = BachedAccumulator::<Bn256, Bn256CeremonyParameters>::calculate_hash(&output_readonly);
+    let contribution_hash = BachedAccumulator::<Bls12, Bls12CeremonyParameters>::calculate_hash(&output_readonly);
 
     print!("Done!\n\n\
               Your contribution has been written to `./response`\n\n\
