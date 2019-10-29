@@ -67,7 +67,7 @@ pub enum UseCompression {
     No
 }
 
-/// Determines if points should be checked for correctness during deserialization.
+/// Determines if points should becked for correctness during deserialization.
 /// This is not necessary for participants, because a transcript verifier can
 /// check this theirself.
 #[derive(Copy, Clone, PartialEq)]
