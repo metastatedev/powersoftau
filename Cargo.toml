@@ -11,20 +11,21 @@ homepage = "https://github.com/matter-labs/powersoftau"
 repository = "https://github.com/matter-labs/powersoftau"
 
 [dependencies]
-rand = "0.4"
+rand = "0.7"
 crossbeam = "0.3.0"
 num_cpus = "1.7.0"
-blake2 = "0.6.1"
-generic-array = "0.8.3"
+blake2 = "0.8.1"
+generic-array = "0.12.3"
 typenum = "1.9.0"
 byteorder = "1.1.0"
-hex-literal = "0.1"
-rust-crypto = "0.2"
 
 memmap = "0.7.0"
 itertools = "0.8.0"
 
-bellman = { git = 'https://github.com/matterinc/bellman', tag = "0.2.0"}
-
-[features]
-
+bellman = { version = "0.4.1", package = "bellperson" }
+paired = "0.16.0"
+ff = "0.5.0"
+groupy = "0.2.0"
+rand_chacha = "0.2.1"
+hex-literal = "0.2.1"
+sha2 = "0.8.0"
