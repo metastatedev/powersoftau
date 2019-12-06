@@ -54,7 +54,7 @@ const G1_COMPRESSED_BYTE_SIZE: usize = 48;
 const G2_COMPRESSED_BYTE_SIZE: usize = 96;
 
 /// The accumulator supports circuits with 2^21 multiplication gates.
-const TAU_POWERS_LENGTH: usize = (1 << 20);
+const TAU_POWERS_LENGTH: usize = (1 << 8);
 
 /// More tau powers are needed in G1 because the Groth16 H query
 /// includes terms of the form tau^i * (tau^m - 1) = tau^(i+m) - tau^i
