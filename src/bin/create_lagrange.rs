@@ -247,11 +247,11 @@ fn main() {
 //
 //        // This converts all of the elements into Lagrange coefficients
 //        // for later construction of interpolation polynomials
-//        println!("Creating g1_coeffs_ifft");
-//
-//        g1_coeffs.ifft(&worker);
-//        println!("Creating g2_coeffs_ifft");
-//        g2_coeffs.ifft(&worker);
+        println!("Creating g1_coeffs_ifft");
+
+        g1_coeffs.ifft(&worker);
+        println!("Creating g2_coeffs_ifft");
+        g2_coeffs.ifft(&worker);
         println!("Creating g1_alpha_coeffs_ifft");
         g1_alpha_coeffs.ifft(&worker);
         println!("Creating g1_beta_coeffs_ifft");
