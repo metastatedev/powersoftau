@@ -79,33 +79,71 @@ fn get_response_file_hash(
 }
 
 fn main() {
-    // Try to load `./response` from disk.
-    let response_reader = OpenOptions::new()
+    // Try to load `./challenge` from disk.
+    let challenge_reader = OpenOptions::new()
         .read(true)
-        .open("response").expect("unable open `./response` in this directory");
+        .open("challenge").expect("unable open `./challenge` in this directory");
 
     {
-        let metadata = response_reader.metadata().expect("unable to get filesystem metadata for `./response`");
-        if metadata.len() != (CONTRIBUTION_BYTE_SIZE as u64) {
-            panic!("The size of `./response` should be {}, but it's {}, so something isn't right.", CONTRIBUTION_BYTE_SIZE, metadata.len());
+        let metadata = challenge_reader.metadata().expect("unable to get filesystem metadata for `./challenge`");
+        if metadata.len() != (ACCUMULATOR_BYTE_SIZE as u64) {
+            panic!("The size of `./challenge` should be {}, but it's {}, so something isn't right.", ACCUMULATOR_BYTE_SIZE, metadata.len());
         }
     }
 
-    let response_reader = BufReader::new(response_reader);
-    let mut response_reader = HashReader::new(response_reader);
-    // Read hash (just to move reader to right place in file to begin deserialization of accumulator)
-    {
-        let mut response_challenge_hash = [0; 64];
-        response_reader.read_exact(&mut response_challenge_hash).expect("couldn't read hash of challenge file from response file");
-//
-//        if &response_challenge_hash[..] != current_accumulator_hash.as_slice() {
-//            panic!("Hash chain failure. This is not the right response.");
-//        }
-    }
-// Load the response's accumulator
+    let challenge_reader = BufReader::new(challenge_reader);
+    let mut challenge_reader = HashReader::new(challenge_reader);
 
-    let current_accumulator = Accumulator::deserialize(&mut response_reader, UseCompression::Yes, CheckForCorrectness::Yes)
-        .expect("wasn't able to deserialize the response file's accumulator");
+    // Deserialize the current challenge
+
+    // Read the BLAKE2b hash of the previous contribution
+    {
+        // We don't need to do anything with it, but it's important for
+        // the hash chain.
+        let mut tmp = [0; 64];
+        challenge_reader.read_exact(&mut tmp).expect("unable to read BLAKE2b hash of previous contribution");
+    }
+
+    // Load the current accumulator into memory
+    let current_accumulator = Accumulator::deserialize(
+        &mut challenge_reader,
+        UseCompression::No,
+        CheckForCorrectness::No // no need to check since we constructed the challenge already
+    ).expect("unable to read uncompressed accumulator");
+
+
+
+
+
+
+
+//    // Try to load `./response` from disk.
+//    let response_reader = OpenOptions::new()
+//        .read(true)
+//        .open("response").expect("unable open `./response` in this directory");
+//
+//    {
+//        let metadata = response_reader.metadata().expect("unable to get filesystem metadata for `./response`");
+//        if metadata.len() != (CONTRIBUTION_BYTE_SIZE as u64) {
+//            panic!("The size of `./response` should be {}, but it's {}, so something isn't right.", CONTRIBUTION_BYTE_SIZE, metadata.len());
+//        }
+//    }
+//
+//    let response_reader = BufReader::new(response_reader);
+//    let mut response_reader = HashReader::new(response_reader);
+//    // Read hash (just to move reader to right place in file to begin deserialization of accumulator)
+//    {
+//        let mut response_challenge_hash = [0; 64];
+//        response_reader.read_exact(&mut response_challenge_hash).expect("couldn't read hash of challenge file from response file");
+////
+////        if &response_challenge_hash[..] != current_accumulator_hash.as_slice() {
+////            panic!("Hash chain failure. This is not the right response.");
+////        }
+//    }
+//// Load the response's accumulator
+//
+//    let current_accumulator = Accumulator::deserialize(&mut response_reader, UseCompression::Yes, CheckForCorrectness::Yes)
+//        .expect("wasn't able to deserialize the response file's accumulator");
 //    // Initialize the accumulator
 //    let mut current_accumulator = Accumulator::new();
 
