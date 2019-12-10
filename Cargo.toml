@@ -20,7 +20,7 @@ byteorder = "1.1.0"
 pairing = "0.14"
 hex-literal = "0.1"
 rust-crypto = "0.2"
-bellman = { git = "https://github.com/arielgabizon/bellman", branch = "lowmem_FFT" }
+bellman = "0.1"
 memmap = "0.7"
 
 [features]
