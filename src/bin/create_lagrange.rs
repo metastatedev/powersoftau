@@ -216,13 +216,50 @@ fn main() {
 
         let degree = 1 << m;
 
-        println!("Creating g1_coeffs");
 
-        let mut g1_coeffs = EvaluationDomain::from_coeffs(
-            current_accumulator.tau_powers_g1[0..degree].iter()
-                .map(|e| Point(e.into_projective()))
-                .collect()
-        ).unwrap();
+        // Create the parameter file
+        let writer = OpenOptions::new()
+            .read(false)
+            .write(true)
+            .create_new(true)
+            .open(paramname)
+            .expect("unable to create parameter file in this directory");
+
+        let mut writer = BufWriter::new(writer);
+
+        {
+            println!("Creating g1_coeffs");
+
+            let mut g1_coeffs = EvaluationDomain::from_coeffs(
+                current_accumulator.tau_powers_g1[0..degree].iter()
+                    .map(|e| Point(e.into_projective()))
+                    .collect()
+            ).unwrap();
+
+            println!("Creating g1_coeffs_ifft");
+
+            g1_coeffs.ifft(&worker);
+
+            let g1_coeffs = g1_coeffs.into_coeffs();
+            assert_eq!(g1_coeffs.len(), degree);
+            let mut g1_coeffs = g1_coeffs.into_iter()
+                .map(|e| e.0)
+                .collect::<Vec<_>>();
+
+            G1::batch_normalization(&mut g1_coeffs);
+            // Lagrange coefficients in G1 (for constructing
+            // LC/IC queries and precomputing polynomials for A)
+            for coeff in g1_coeffs {
+                // Was normalized earlier in parallel
+                let coeff = coeff.into_affine();
+
+                writer.write_all(
+                    coeff.into_uncompressed()
+                        .as_ref()
+                ).unwrap();
+            }
+        }
+
         println!("Creating g2_coeffs");
 
         let mut g2_coeffs = EvaluationDomain::from_coeffs(
@@ -247,31 +284,23 @@ fn main() {
 //
 //        // This converts all of the elements into Lagrange coefficients
 //        // for later construction of interpolation polynomials
-        println!("Creating g1_coeffs_ifft");
-
-        g1_coeffs.ifft(&worker);
-        println!("Creating g2_coeffs_ifft");
+           println!("Creating g2_coeffs_ifft");
         g2_coeffs.ifft(&worker);
         println!("Creating g1_alpha_coeffs_ifft");
         g1_alpha_coeffs.ifft(&worker);
         println!("Creating g1_beta_coeffs_ifft");
         g1_beta_coeffs.ifft(&worker);
 
-        let g1_coeffs = g1_coeffs.into_coeffs();
         let g2_coeffs = g2_coeffs.into_coeffs();
         let g1_alpha_coeffs = g1_alpha_coeffs.into_coeffs();
         let g1_beta_coeffs = g1_beta_coeffs.into_coeffs();
 
-        assert_eq!(g1_coeffs.len(), degree);
         assert_eq!(g2_coeffs.len(), degree);
         assert_eq!(g1_alpha_coeffs.len(), degree);
         assert_eq!(g1_beta_coeffs.len(), degree);
 
         // Remove the Point() wrappers
 
-        let mut g1_coeffs = g1_coeffs.into_iter()
-            .map(|e| e.0)
-            .collect::<Vec<_>>();
 
         let mut g2_coeffs = g2_coeffs.into_iter()
             .map(|e| e.0)
@@ -286,7 +315,6 @@ fn main() {
             .collect::<Vec<_>>();
 
         // Batch normalize
-        G1::batch_normalization(&mut g1_coeffs);
         G2::batch_normalization(&mut g2_coeffs);
         G1::batch_normalization(&mut g1_alpha_coeffs);
         G1::batch_normalization(&mut g1_beta_coeffs);
@@ -308,16 +336,7 @@ fn main() {
         // Batch normalize this as well
         G1::batch_normalization(&mut h);
 
-        // Create the parameter file
-        let writer = OpenOptions::new()
-            .read(false)
-            .write(true)
-            .create_new(true)
-            .open(paramname)
-            .expect("unable to create parameter file in this directory");
-
-        let mut writer = BufWriter::new(writer);
-
+ 
         // Write alpha (in g1)
         // Needed by verifier for e(alpha, beta)
         // Needed by prover for A and C elements of proof
@@ -344,17 +363,6 @@ fn main() {
                 .as_ref()
         ).unwrap();
 
-        // Lagrange coefficients in G1 (for constructing
-        // LC/IC queries and precomputing polynomials for A)
-        for coeff in g1_coeffs {
-            // Was normalized earlier in parallel
-            let coeff = coeff.into_affine();
-
-            writer.write_all(
-                coeff.into_uncompressed()
-                    .as_ref()
-            ).unwrap();
-        }
 
         // Lagrange coefficients in G2 (for precomputing
         // polynomials for B)
