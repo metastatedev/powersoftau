@@ -3,7 +3,7 @@
 [[package]]
 name = "bellman"
 version = "0.1.0"
-source = "git+https://github.com/arielgabizon/bellman?branch=lowmem_FFT#10c5010fd9c2ca69442dc9775ea271e286e776d8"
+source = "git+https://github.com/arielgabizon/bellman?branch=lowmem_FFT#2c6d1e33737cf703e71bb9094a51311e0a983c7a"
 dependencies = [
  "bit-vec 0.4.4 (registry+https://github.com/rust-lang/crates.io-index)",
  "byteorder 1.2.2 (registry+https://github.com/rust-lang/crates.io-index)",
