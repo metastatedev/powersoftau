@@ -1,4 +1,5 @@
 use bellman::domain::{EvaluationDomain, Point};
+use bellman::gpu;
 use bellman::multicore::Worker;
 use groupy::{CurveAffine, CurveProjective};
 use paired::bls12_381::{Bls12, G1, G2};
@@ -64,6 +65,22 @@ fn get_response_file_hash(
 }
 
 fn main() {
+    let lock = gpu::lock().expect("failed to aquire gpu lock");
+
+    let mut fft_kern = {
+        let mut log_d = 0u32;
+        while (1 << log_d) < 24 {
+            log_d += 1;
+        }
+
+        bellman::domain::gpu_fft_supported::<Bls12>(log_d).ok()
+    };
+    if fft_kern.is_some() {
+        println!("GPU FFT is supported!");
+    } else {
+        println!("GPU FFT is NOT supported!");
+    }
+
     // Try to load `./challenge` from disk.
     let challenge_reader = OpenOptions::new()
         .read(true)
@@ -248,13 +265,13 @@ fn main() {
         //        // for later construction of interpolation polynomials
         println!("Creating g1_coeffs_ifft");
 
-        g1_coeffs.ifft(&worker, &mut None);
+        g1_coeffs.ifft(&worker, &mut fft_kern);
         println!("Creating g2_coeffs_ifft");
-        g2_coeffs.ifft(&worker, &mut None);
+        g2_coeffs.ifft(&worker, &mut fft_kern);
         println!("Creating g1_alpha_coeffs_ifft");
-        g1_alpha_coeffs.ifft(&worker, &mut None);
+        g1_alpha_coeffs.ifft(&worker, &mut fft_kern);
         println!("Creating g1_beta_coeffs_ifft");
-        g1_beta_coeffs.ifft(&worker, &mut None);
+        g1_beta_coeffs.ifft(&worker, &mut fft_kern);
 
         let g1_coeffs = g1_coeffs.into_coeffs();
         let g2_coeffs = g2_coeffs.into_coeffs();
@@ -391,4 +408,6 @@ fn main() {
                 .unwrap();
         }
     }
+
+    gpu::unlock(lock);
 }

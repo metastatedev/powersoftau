@@ -22,10 +22,13 @@ byteorder = "1.1.0"
 memmap = "0.7.0"
 itertools = "0.8.0"
 
-bellman = { version = "0.4.1", package = "bellperson" }
+bellman = { version = "0.5", package = "bellperson", features = ["gpu"] }
 paired = "0.16.0"
 ff = "0.5.0"
 groupy = "0.2.0"
 rand_chacha = "0.2.1"
 hex-literal = "0.2.1"
 sha2 = "0.8.0"
+
+[patch.crates-io]
+bellperson = { git = "https://github.com/filecoin-project/bellman", branch = "feat-public-gpu" }
