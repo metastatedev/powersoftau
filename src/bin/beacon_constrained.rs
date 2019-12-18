@@ -1,11 +1,3 @@
-extern crate bellman;
-extern crate blake2;
-extern crate byteorder;
-extern crate memmap;
-extern crate powersoftau;
-extern crate rand;
-extern crate sha2;
-
 // use powersoftau::bls12_381::{Bls12CeremonyParameters};
 use powersoftau::batched_accumulator::BachedAccumulator;
 use powersoftau::keypair::keypair;
@@ -147,7 +139,7 @@ fn main() {
 
     {
         println!("Contributing on top of the hash:");
-        for line in current_accumulator_hash.as_slice().chunks(16) {
+        for line in current_accumulator_hash.chunks(16) {
             print!("\t");
             for section in line.chunks(4) {
                 for b in section {
@@ -159,7 +151,7 @@ fn main() {
         }
 
         (&mut writable_map[0..])
-            .write(current_accumulator_hash.as_slice())
+            .write(&current_accumulator_hash)
             .expect("unable to write a challenge hash to mmap");
 
         writable_map
@@ -203,7 +195,7 @@ fn main() {
          The BLAKE2b hash of `./response` is:\n"
     );
 
-    for line in contribution_hash.as_slice().chunks(16) {
+    for line in contribution_hash.chunks(16) {
         print!("\t");
         for section in line.chunks(4) {
             for b in section {

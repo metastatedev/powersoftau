@@ -54,14 +54,14 @@ fn main() {
     // Write a blank BLAKE2b hash:
     let hash = blank_hash();
     (&mut writable_map[0..])
-        .write(hash.as_slice())
+        .write(&hash)
         .expect("unable to write a default hash to mmap");
     writable_map
         .flush()
         .expect("unable to write blank hash to `./challenge`");
 
     println!("Blank hash for an empty challenge:");
-    for line in hash.as_slice().chunks(16) {
+    for line in hash.chunks(16) {
         print!("\t");
         for section in line.chunks(4) {
             for b in section {
@@ -90,7 +90,7 @@ fn main() {
 
     println!("Empty contribution is formed with a hash:");
 
-    for line in contribution_hash.as_slice().chunks(16) {
+    for line in contribution_hash.chunks(16) {
         print!("\t");
         for section in line.chunks(4) {
             for b in section {

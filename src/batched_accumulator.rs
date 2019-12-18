@@ -1,17 +1,6 @@
-extern crate bellman;
-extern crate blake2;
-extern crate byteorder;
-extern crate crossbeam;
-extern crate generic_array;
-extern crate itertools;
-extern crate memmap;
-extern crate num_cpus;
 /// Memory constrained accumulator that checks parts of the initial information in parts that fit to memory
 /// and then contributes to entropy in parts as well
-extern crate rand;
-extern crate typenum;
-
-use blake2::{Blake2b, Digest};
+use blake2b_simd::State as Blake2b;
 use byteorder::{BigEndian, ReadBytesExt};
 use ff::{Field, PrimeField};
 use generic_array::GenericArray;
@@ -55,7 +44,7 @@ pub struct BachedAccumulator<E: Engine, P: PowersOfTauParameters> {
     /// beta
     pub beta_g2: E::G2Affine,
     /// Hash chain hash
-    pub hash: GenericArray<u8, U64>,
+    pub hash: [u8; 64],
     /// Keep parameters here as a marker
     marker: std::marker::PhantomData<P>,
 }
@@ -65,14 +54,14 @@ impl<E: Engine, P: PowersOfTauParameters> BachedAccumulator<E, P> {
     /// used a specially formed writer to write to the file and calculate a hash on the fly, but memory-constrained
     /// implementation now writes without a particular order, so plain recalculation at the end
     /// of the procedure is more efficient
-    pub fn calculate_hash(input_map: &Mmap) -> GenericArray<u8, U64> {
+    pub fn calculate_hash(input_map: &Mmap) -> [u8; 64] {
         let chunk_size = 1 << 30; // read by 1GB from map
         let mut hasher = Blake2b::default();
         for chunk in input_map.chunks(chunk_size) {
-            hasher.input(&chunk);
+            hasher.update(&chunk);
         }
 
-        hasher.result()
+        *hasher.finalize().as_array()
     }
 }
 

@@ -1,9 +1,3 @@
-extern crate bellman;
-extern crate blake2;
-extern crate byteorder;
-extern crate powersoftau;
-extern crate rand;
-
 use bellman::domain::{EvaluationDomain, Point};
 use bellman::multicore::Worker;
 use groupy::{CurveAffine, CurveProjective};
@@ -39,10 +33,7 @@ fn get_challenge_file_hash<P: PowersOfTauParameters>(
 
     acc.serialize(&mut sink, UseCompression::No).unwrap();
 
-    let mut tmp = [0; 64];
-    tmp.copy_from_slice(sink.into_hash().as_slice());
-
-    tmp
+    sink.into_hash()
 }
 
 // Computes the hash of the response file, given the new
@@ -62,10 +53,7 @@ fn get_response_file_hash<P: PowersOfTauParameters>(
 
     pubkey.serialize(&mut sink).unwrap();
 
-    let mut tmp = [0; 64];
-    tmp.copy_from_slice(sink.into_hash().as_slice());
-
-    tmp
+    sink.into_hash()
 }
 
 fn main() {
@@ -85,7 +73,7 @@ fn main() {
     // The "last response file hash" is just a blank BLAKE2b hash
     // at the beginning of the hash chain.
     let mut last_response_file_hash = [0; 64];
-    last_response_file_hash.copy_from_slice(blank_hash().as_slice());
+    last_response_file_hash.copy_from_slice(&blank_hash());
 
     // There were 89 rounds.
     for _ in 0..89 {

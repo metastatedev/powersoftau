@@ -1,10 +1,3 @@
-extern crate bellman;
-extern crate blake2;
-extern crate byteorder;
-extern crate memmap;
-extern crate powersoftau;
-extern crate rand;
-
 // use powersoftau::bls12_381::{Bls12CeremonyParameters};
 use powersoftau::batched_accumulator::BachedAccumulator;
 use powersoftau::keypair::PublicKey;
@@ -100,7 +93,7 @@ fn main() {
         );
 
     println!("Hash of the `challenge` file for verification:");
-    for line in current_accumulator_hash.as_slice().chunks(16) {
+    for line in current_accumulator_hash.chunks(16) {
         print!("\t");
         for section in line.chunks(4) {
             for b in section {
@@ -134,7 +127,7 @@ fn main() {
             println!("");
         }
 
-        if &response_challenge_hash[..] != current_accumulator_hash.as_slice() {
+        if &response_challenge_hash[..] != &current_accumulator_hash[..] {
             panic!("Hash chain failure. This is not the right response.");
         }
     }
@@ -143,7 +136,7 @@ fn main() {
         BachedAccumulator::<Bls12, Bls12CeremonyParameters>::calculate_hash(&response_readable_map);
 
     println!("Hash of the `response` file for verification:");
-    for line in response_hash.as_slice().chunks(16) {
+    for line in response_hash.chunks(16) {
         print!("\t");
         for section in line.chunks(4) {
             for b in section {
@@ -171,7 +164,7 @@ fn main() {
         &challenge_readable_map,
         &response_readable_map,
         &public_key,
-        current_accumulator_hash.as_slice(),
+        &current_accumulator_hash,
         PREVIOUS_CHALLENGE_IS_COMPRESSED,
         CONTRIBUTION_IS_COMPRESSED,
         CheckForCorrectness::No,
@@ -211,7 +204,7 @@ fn main() {
 
         {
             (&mut writable_map[0..])
-                .write(response_hash.as_slice())
+                .write(&response_hash)
                 .expect("unable to write a default hash to mmap");
 
             writable_map
@@ -238,7 +231,7 @@ fn main() {
 
         println!("Here's the BLAKE2b hash of the decompressed participant's response as `new_challenge` file:");
 
-        for line in recompressed_hash.as_slice().chunks(16) {
+        for line in recompressed_hash.chunks(16) {
             print!("\t");
             for section in line.chunks(4) {
                 for b in section {

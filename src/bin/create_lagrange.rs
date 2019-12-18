@@ -1,7 +1,6 @@
 use std::fs::OpenOptions;
 use std::io::{self, BufReader, BufWriter, Read, Write};
 
-use rayon::prelude::*;
 use bellman::domain::{EvaluationDomain, Point};
 use bellman::gpu;
 use bellman::multicore::Worker;
@@ -12,6 +11,7 @@ use powersoftau::accumulator::*;
 use powersoftau::keypair::PublicKey;
 use powersoftau::parameters::{CheckForCorrectness, PowersOfTauParameters, UseCompression};
 use powersoftau::small_bls12_381::Bls12CeremonyParameters;
+use rayon::prelude::*;
 
 fn into_hex(h: &[u8]) -> String {
     let mut f = String::new();
@@ -37,10 +37,7 @@ fn get_challenge_file_hash(
 
     acc.serialize(&mut sink, UseCompression::No).unwrap();
 
-    let mut tmp = [0; 64];
-    tmp.copy_from_slice(sink.into_hash().as_slice());
-
-    tmp
+    sink.into_hash()
 }
 
 // Computes the hash of the response file, given the new
@@ -60,18 +57,14 @@ fn get_response_file_hash(
 
     pubkey.serialize(&mut sink).unwrap();
 
-    let mut tmp = [0; 64];
-    tmp.copy_from_slice(sink.into_hash().as_slice());
-
-    tmp
+    sink.into_hash()
 }
 
 fn main() {
     pretty_env_logger::init_timed();
 
-    let lock = gpu::lock().expect("failed to aquire gpu lock");
-
     // Try to load `./challenge` from disk.
+    info!("Loading challenge");
     let challenge_reader = OpenOptions::new()
         .read(true)
         .open("challenge")
@@ -206,6 +199,7 @@ fn main() {
     info!("Transcript OK!");
 
     let worker = &Worker::new();
+    let lock = gpu::lock().expect("failed to aquire gpu lock");
 
     // Create the parameters for various 2^m circuit depths.
     for m in 24..28 {
@@ -302,13 +296,16 @@ fn main() {
         // x^(i + m) - x^i for i in 0..=(m-2)
         // for radix2 evaluation domains
         info!("H query");
-        let mut h: Vec<_> = (0..degree - 1).into_par_iter().map(|i| {
-            let mut tmp = current_accumulator.tau_powers_g1[i + degree].into_projective();
-            let mut tmp2 = current_accumulator.tau_powers_g1[i].into_projective();
-            tmp2.negate();
-            tmp.add_assign(&tmp2);
-            tmp
-        }).collect();
+        let mut h: Vec<_> = (0..degree - 1)
+            .into_par_iter()
+            .map(|i| {
+                let mut tmp = current_accumulator.tau_powers_g1[i + degree].into_projective();
+                let mut tmp2 = current_accumulator.tau_powers_g1[i].into_projective();
+                tmp2.negate();
+                tmp.add_assign(&tmp2);
+                tmp
+            })
+            .collect();
 
         info!("Batch normalize H");
         // Batch normalize this as well

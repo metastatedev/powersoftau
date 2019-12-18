@@ -1,13 +1,4 @@
-extern crate bellman;
-extern crate blake2;
-extern crate byteorder;
-extern crate crossbeam;
-extern crate generic_array;
-extern crate num_cpus;
-extern crate rand;
-extern crate typenum;
-
-use blake2::{Blake2b, Digest};
+use blake2b_simd::State as Blake2b;
 use byteorder::{BigEndian, ReadBytesExt};
 use ff::{Field, PrimeField};
 use generic_array::GenericArray;

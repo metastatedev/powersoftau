@@ -14,14 +14,12 @@ repository = "https://github.com/matter-labs/powersoftau"
 rand = "0.7"
 crossbeam = "0.3.0"
 num_cpus = "1.7.0"
-blake2 = "0.8.1"
 generic-array = "0.12.3"
 typenum = "1.9.0"
 byteorder = "1.1.0"
 rayon = "1.2"
 memmap = "0.7.0"
 itertools = "0.8.0"
-
 bellman = { version = "0.5", package = "bellperson", features = ["gpu"] }
 paired = "0.16.0"
 ff = "0.5.0"
@@ -31,6 +29,7 @@ hex-literal = "0.2.1"
 sha2 = "0.8.0"
 log = "0.4.8"
 pretty_env_logger = "0.3.1"
+blake2b_simd = "0.5.9"
 
 [patch.crates-io]
 bellperson = { git = "https://github.com/filecoin-project/bellman", branch = "feat-public-gpu" }

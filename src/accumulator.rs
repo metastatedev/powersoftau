@@ -25,20 +25,11 @@
 //! After some time has elapsed for participants to contribute to the ceremony, a participant is
 //! simulated with a randomness beacon. The resulting `Accumulator` contains partial zk-SNARK
 //! public parameters for all circuits within a bounded size.
-extern crate bellman;
-extern crate blake2;
-extern crate byteorder;
-extern crate crossbeam;
-extern crate generic_array;
-extern crate memmap;
-extern crate num_cpus;
-extern crate rand;
-extern crate typenum;
 
 use super::keypair::*;
 use super::parameters::*;
 use super::utils::*;
-use blake2::{Blake2b, Digest};
+use blake2b_simd::State as Blake2b;
 use byteorder::{BigEndian, ReadBytesExt};
 use ff::{Field, PrimeField};
 use generic_array::GenericArray;
@@ -347,11 +338,11 @@ pub fn verify_transform<E: Engine, P: PowersOfTauParameters>(
 
     let compute_g2_s = |g1_s: E::G1Affine, g1_s_x: E::G1Affine, personalization: u8| {
         let mut h = Blake2b::default();
-        h.input(&[personalization]);
-        h.input(digest);
-        h.input(g1_s.into_uncompressed().as_ref());
-        h.input(g1_s_x.into_uncompressed().as_ref());
-        hash_to_g2::<E>(h.result().as_ref()).into_affine()
+        h.update(&[personalization]);
+        h.update(digest);
+        h.update(g1_s.into_uncompressed().as_ref());
+        h.update(g1_s_x.into_uncompressed().as_ref());
+        hash_to_g2::<E>(h.finalize().as_ref()).into_affine()
     };
 
     let tau_g2_s = compute_g2_s(key.tau_g1.0, key.tau_g1.1, 0);
@@ -454,8 +445,8 @@ impl<R: Read> HashReader<R> {
     }
 
     /// Destroy this reader and return the hash of what was read.
-    pub fn into_hash(self) -> GenericArray<u8, U64> {
-        self.hasher.result()
+    pub fn into_hash(self) -> [u8; 64] {
+        *self.hasher.finalize().as_array()
     }
 }
 
@@ -464,7 +455,7 @@ impl<R: Read> Read for HashReader<R> {
         let bytes = self.reader.read(buf)?;
 
         if bytes > 0 {
-            self.hasher.input(&buf[0..bytes]);
+            self.hasher.update(&buf[0..bytes]);
         }
 
         Ok(bytes)
@@ -487,8 +478,8 @@ impl<W: Write> HashWriter<W> {
     }
 
     /// Destroy this writer and return the hash of what was written.
-    pub fn into_hash(self) -> GenericArray<u8, U64> {
-        self.hasher.result()
+    pub fn into_hash(self) -> [u8; 64] {
+        *self.hasher.finalize().as_array()
     }
 }
 
@@ -497,7 +488,7 @@ impl<W: Write> Write for HashWriter<W> {
         let bytes = self.writer.write(buf)?;
 
         if bytes > 0 {
-            self.hasher.input(&buf[0..bytes]);
+            self.hasher.update(&buf[0..bytes]);
         }
 
         Ok(bytes)

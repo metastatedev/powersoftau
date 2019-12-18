@@ -1,15 +1,4 @@
-extern crate bellman;
-extern crate blake2;
-extern crate byteorder;
-extern crate crossbeam;
-extern crate generic_array;
-extern crate itertools;
-extern crate memmap;
-extern crate num_cpus;
-extern crate rand;
-extern crate typenum;
-
-use blake2::{Blake2b, Digest};
+use blake2b_simd::State as Blake2b;
 use byteorder::{BigEndian, ReadBytesExt};
 use ff::{Field, PrimeField};
 use generic_array::GenericArray;
@@ -82,13 +71,13 @@ pub fn keypair<R: RngCore, E: Engine>(rng: &mut R, digest: &[u8]) -> (PublicKey<
         // Compute g^{s*x}
         let g1_s_x = g1_s.mul(x).into_affine();
         // Compute BLAKE2b(personalization | transcript | g^s | g^{s*x})
-        let h: generic_array::GenericArray<u8, U64> = {
+        let h = {
             let mut h = Blake2b::default();
-            h.input(&[personalization]);
-            h.input(digest);
-            h.input(g1_s.into_uncompressed().as_ref());
-            h.input(g1_s_x.into_uncompressed().as_ref());
-            h.result()
+            h.update(&[personalization]);
+            h.update(digest);
+            h.update(g1_s.into_uncompressed().as_ref());
+            h.update(g1_s_x.into_uncompressed().as_ref());
+            h.finalize()
         };
         // Hash into G2 as g^{s'}
         let g2_s: E::G2Affine = hash_to_g2::<E>(h.as_ref()).into_affine();

@@ -1,13 +1,4 @@
-extern crate bellman;
-extern crate blake2;
-extern crate byteorder;
-extern crate crossbeam;
-extern crate generic_array;
-extern crate num_cpus;
-extern crate rand;
-extern crate typenum;
-
-use blake2::{Blake2b, Digest};
+use blake2b_simd::State as Blake2b;
 use byteorder::{BigEndian, ReadBytesExt};
 use ff::{Field, PrimeField, PrimeFieldRepr};
 use generic_array::GenericArray;
@@ -123,7 +114,7 @@ fn merge_pairs<E: Engine, G: CurveAffine<Engine = E, Scalar = E::Fr>>(
     v1: &[G],
     v2: &[G],
 ) -> (G, G) {
-    use self::rand::thread_rng;
+    use rand::thread_rng;
 
     assert_eq!(v1.len(), v2.len());
     let rng = &mut thread_rng();
@@ -145,8 +136,8 @@ pub fn power_pairs<E: Engine, G: CurveAffine<Engine = E, Scalar = E::Fr>>(v: &[G
 }
 
 /// Compute BLAKE2b("")
-pub fn blank_hash() -> GenericArray<u8, U64> {
-    Blake2b::new().result()
+pub fn blank_hash() -> [u8; 64] {
+    *Blake2b::new().finalize().as_array()
 }
 
 /// Checks if pairs have the same ratio.
@@ -177,12 +168,12 @@ pub fn compute_g2_s<E: Engine>(
     personalization: u8,
 ) -> E::G2Affine {
     let mut h = Blake2b::default();
-    h.input(&[personalization]);
-    h.input(digest);
-    h.input(g1_s.into_uncompressed().as_ref());
-    h.input(g1_s_x.into_uncompressed().as_ref());
+    h.update(&[personalization]);
+    h.update(digest);
+    h.update(g1_s.into_uncompressed().as_ref());
+    h.update(g1_s_x.into_uncompressed().as_ref());
 
-    hash_to_g2::<E>(h.result().as_ref()).into_affine()
+    hash_to_g2::<E>(h.finalize().as_ref()).into_affine()
 }
 
 /// Perform multi-exponentiation. The caller is responsible for ensuring that

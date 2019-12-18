@@ -1,10 +1,3 @@
-extern crate bellman;
-extern crate blake2;
-extern crate byteorder;
-extern crate memmap;
-extern crate powersoftau;
-extern crate rand;
-
 //use powersoftau::bls12_381::{Bls12CeremonyParameters};
 use powersoftau::batched_accumulator::BachedAccumulator;
 use powersoftau::keypair::keypair;
@@ -35,7 +28,7 @@ fn main() {
 
     // Create an RNG based on a mixture of system randomness and user provided randomness
     let mut rng = {
-        use blake2::{Blake2b, Digest};
+        use blake2b_simd::State as Blake2b;
         use rand::{rngs::OsRng, Rng, SeedableRng};
         use rand_chacha::ChaChaRng;
 
@@ -46,7 +39,7 @@ fn main() {
             // Gather 1024 bytes of entropy from the system
             for _ in 0..1024 {
                 let r: u8 = system_rng.gen();
-                h.input(&[r]);
+                h.update(&[r]);
             }
 
             // Ask the user to provide some information for additional entropy
@@ -57,8 +50,8 @@ fn main() {
                 .expect("expected to read some random text from the user");
 
             // Hash it all up to make a seed
-            h.input(&user_input.as_bytes());
-            h.result()
+            h.update(&user_input.as_bytes());
+            *h.finalize().as_array()
         };
 
         let digest = &h[..];
@@ -137,7 +130,7 @@ fn main() {
 
     {
         println!("`challenge` file contains decompressed points and has a hash:");
-        for line in current_accumulator_hash.as_slice().chunks(16) {
+        for line in current_accumulator_hash.chunks(16) {
             print!("\t");
             for section in line.chunks(4) {
                 for b in section {
@@ -149,7 +142,7 @@ fn main() {
         }
 
         (&mut writable_map[0..])
-            .write(current_accumulator_hash.as_slice())
+            .write(&current_accumulator_hash)
             .expect("unable to write a challenge hash to mmap");
 
         writable_map
@@ -219,7 +212,7 @@ fn main() {
          The BLAKE2b hash of `./response` is:\n"
     );
 
-    for line in contribution_hash.as_slice().chunks(16) {
+    for line in contribution_hash.chunks(16) {
         print!("\t");
         for section in line.chunks(4) {
             for b in section {

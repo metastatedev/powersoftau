@@ -22,7 +22,7 @@ fn main() {
 
     // Write a blank BLAKE2b hash:
     writer
-        .write_all(&blank_hash().as_slice())
+        .write_all(&blank_hash())
         .expect("unable to write blank hash to `./challenge`");
 
     let parameters = Bls12CeremonyParameters {};
