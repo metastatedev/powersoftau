@@ -72,7 +72,7 @@ fn main() {
 
     let mut fft_kern = {
         let mut log_d = 0u32;
-        while (1 << log_d) < 24 {
+        while (1 << log_d) < 21 {
             log_d += 1;
         }
 
@@ -221,9 +221,9 @@ fn main() {
     let worker = &Worker::new();
 
     // Create the parameters for various 2^m circuit depths.
-    for m in 27..28 {
+    for m in 15..20 {
         let paramname = format!("phase1radix2m{}", m);
-        info!("Creating {}", paramname);
+        info!("\n\nCreating {}", paramname);
 
         let degree = 1 << m;
 
@@ -263,11 +263,11 @@ fn main() {
                 .collect(),
         )
         .unwrap();
-        //
-        //        // This converts all of the elements into Lagrange coefficients
-        //        // for later construction of interpolation polynomials
-        info!("Creating g1_coeffs_ifft");
 
+        // This converts all of the elements into Lagrange coefficients
+        // for later construction of interpolation polynomials
+
+        info!("Creating g1_coeffs_ifft");
         g1_coeffs.ifft(&worker, &mut fft_kern).unwrap();
         info!("Creating g2_coeffs_ifft");
         g2_coeffs.ifft(&worker, &mut fft_kern).unwrap();

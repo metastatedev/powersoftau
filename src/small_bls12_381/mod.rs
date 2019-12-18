@@ -28,7 +28,7 @@ use crate::utils::*;
 pub struct Bls12CeremonyParameters {}
 
 impl PowersOfTauParameters for Bls12CeremonyParameters {
-    const REQUIRED_POWER: usize = 27; // generate to have roughly 2 million constraints
+    const REQUIRED_POWER: usize = 21; // generate to have roughly 2 million constraints
 
     // This ceremony is based on the BLS381 elliptic curve construction.
     const G1_UNCOMPRESSED_BYTE_SIZE: usize = 96;
