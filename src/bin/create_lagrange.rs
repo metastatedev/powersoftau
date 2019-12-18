@@ -352,56 +352,71 @@ fn main() {
 
         // Lagrange coefficients in G1 (for constructing
         // LC/IC queries and precomputing polynomials for A)
-        for coeff in g1_coeffs {
-            // Was normalized earlier in parallel
-            let coeff = coeff.into_affine();
+        let g1_coeffs_uncompressed: Vec<_> = g1_coeffs
+            .par_iter()
+            .map(|c| {
+                // Was normalized earlier in parallel
+                c.into_affine().into_uncompressed()
+            })
+            .collect();
 
-            writer
-                .write_all(coeff.into_uncompressed().as_ref())
-                .unwrap();
+        for coeff in g1_coeffs_uncompressed {
+            writer.write_all(coeff.as_ref()).unwrap();
         }
 
         // Lagrange coefficients in G2 (for precomputing
         // polynomials for B)
-        for coeff in g2_coeffs {
-            // Was normalized earlier in parallel
-            let coeff = coeff.into_affine();
+        let g2_coeffs_uncompressed: Vec<_> = g2_coeffs
+            .par_iter()
+            .map(|c| {
+                // Was normalized earlier in parallel
+                c.into_affine().into_uncompressed()
+            })
+            .collect();
 
-            writer
-                .write_all(coeff.into_uncompressed().as_ref())
-                .unwrap();
+        for coeff in g2_coeffs_uncompressed {
+            writer.write_all(coeff.as_ref()).unwrap();
         }
 
         // Lagrange coefficients in G1 with alpha (for
         // LC/IC queries)
-        for coeff in g1_alpha_coeffs {
-            // Was normalized earlier in parallel
-            let coeff = coeff.into_affine();
+        let g1_alpha_coeffs_uncompressed: Vec<_> = g1_alpha_coeffs
+            .par_iter()
+            .map(|c| {
+                // Was normalized earlier in parallel
+                c.into_affine().into_uncompressed()
+            })
+            .collect();
 
-            writer
-                .write_all(coeff.into_uncompressed().as_ref())
-                .unwrap();
+        for coeff in g1_alpha_coeffs_uncompressed {
+            writer.write_all(coeff.as_ref()).unwrap();
         }
 
         // Lagrange coefficients in G1 with beta (for
         // LC/IC queries)
-        for coeff in g1_beta_coeffs {
-            // Was normalized earlier in parallel
-            let coeff = coeff.into_affine();
+        let g1_beta_coeffs_uncompressed: Vec<_> = g1_beta_coeffs
+            .par_iter()
+            .map(|c| {
+                // Was normalized earlier in parallel
+                c.into_affine().into_uncompressed()
+            })
+            .collect();
 
-            writer
-                .write_all(coeff.into_uncompressed().as_ref())
-                .unwrap();
+        for coeff in g1_beta_coeffs_uncompressed {
+            writer.write_all(coeff.as_ref()).unwrap();
         }
 
         // Bases for H polynomial computation
-        for coeff in h {
-            // Was normalized earlier in parallel
-            let coeff = coeff.into_affine();
+        let h_uncompressed: Vec<_> = h
+            .par_iter()
+            .map(|c| {
+                // Was normalized earlier in parallel
+                c.into_affine().into_uncompressed()
+            })
+            .collect();
 
-            writer
-                .write_all(coeff.into_uncompressed().as_ref())
-                .unwrap();
+        for coeff in h_uncompressed {
+            writer.write_all(coeff.as_ref()).unwrap();
         }
     }
 
