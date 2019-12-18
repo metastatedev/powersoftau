@@ -1,6 +1,7 @@
 use std::fs::OpenOptions;
 use std::io::{self, BufReader, BufWriter, Read, Write};
 
+use rayon::prelude::*;
 use bellman::domain::{EvaluationDomain, Point};
 use bellman::gpu;
 use bellman::multicore::Worker;
@@ -69,20 +70,6 @@ fn main() {
     pretty_env_logger::init_timed();
 
     let lock = gpu::lock().expect("failed to aquire gpu lock");
-
-    let mut fft_kern = {
-        let mut log_d = 0u32;
-        while (1 << log_d) < 21 {
-            log_d += 1;
-        }
-
-        bellman::domain::gpu_fft_supported::<Bls12>(log_d).ok()
-    };
-    if fft_kern.is_some() {
-        info!("GPU FFT is supported!");
-    } else {
-        info!("GPU FFT is NOT supported!");
-    }
 
     // Try to load `./challenge` from disk.
     let challenge_reader = OpenOptions::new()
@@ -221,11 +208,18 @@ fn main() {
     let worker = &Worker::new();
 
     // Create the parameters for various 2^m circuit depths.
-    for m in 15..20 {
+    for m in 24..28 {
         let paramname = format!("phase1radix2m{}", m);
         info!("\n\nCreating {}", paramname);
 
         let degree = 1 << m;
+        let mut fft_kern = bellman::domain::gpu_fft_supported::<Bls12>(m).ok();
+
+        if fft_kern.is_some() {
+            info!("GPU FFT is supported!");
+        } else {
+            info!("GPU FFT is NOT supported!");
+        }
 
         info!("Creating g1_coeffs");
 
@@ -308,16 +302,15 @@ fn main() {
         // x^(i + m) - x^i for i in 0..=(m-2)
         // for radix2 evaluation domains
         info!("H query");
-        let mut h = Vec::with_capacity(degree - 1);
-        for i in 0..(degree - 1) {
+        let mut h: Vec<_> = (0..degree - 1).into_par_iter().map(|i| {
             let mut tmp = current_accumulator.tau_powers_g1[i + degree].into_projective();
             let mut tmp2 = current_accumulator.tau_powers_g1[i].into_projective();
             tmp2.negate();
             tmp.add_assign(&tmp2);
+            tmp
+        }).collect();
 
-            h.push(tmp);
-        }
-
+        info!("Batch normalize H");
         // Batch normalize this as well
         G1::batch_normalization(&mut h);
 
