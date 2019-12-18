@@ -32,4 +32,4 @@ pretty_env_logger = "0.3.1"
 blake2b_simd = "0.5.9"
 
 [patch.crates-io]
-bellperson = { git = "https://github.com/filecoin-project/bellman", branch = "feat-public-gpu" }
+bellperson = { git = "https://github.com/filecoin-project/bellman", branch = "master" }
