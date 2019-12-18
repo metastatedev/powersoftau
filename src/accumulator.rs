@@ -38,6 +38,7 @@ use memmap::{Mmap, MmapMut};
 use paired::*;
 use rand::{RngCore, SeedableRng};
 use rand_chacha::ChaChaRng;
+use rayon::prelude::*;
 use std::fmt;
 use std::io::{self, Read, Write};
 use std::sync::{Arc, Mutex};
@@ -143,71 +144,36 @@ impl<E: Engine, P: PowersOfTauParameters> Accumulator<E, P> {
                     reader.read_exact(encoded.as_mut())?;
                 }
 
-                // Allocate space for the deserialized elements
-                let mut res_affine = vec![ENC::Affine::zero(); size];
-
-                let mut chunk_size = res.len() / num_cpus::get();
-                if chunk_size == 0 {
-                    chunk_size = 1;
-                }
-
-                // If any of our threads encounter a deserialization/IO error, catch
-                // it with this.
-                let decoding_error = Arc::new(Mutex::new(None));
-
-                crossbeam::scope(|scope| {
-                    for (source, target) in res
-                        .chunks(chunk_size)
-                        .zip(res_affine.chunks_mut(chunk_size))
-                    {
-                        let decoding_error = decoding_error.clone();
-
-                        scope.spawn(move || {
-                            for (source, target) in source.iter().zip(target.iter_mut()) {
-                                match {
-                                    // If we're a participant, we don't need to check all of the
-                                    // elements in the accumulator, which saves a lot of time.
-                                    // The hash chain prevents this from being a problem: the
-                                    // transcript guarantees that the accumulator was properly
-                                    // formed.
-                                    match checked {
-                                        CheckForCorrectness::Yes => {
-                                            // Points at infinity are never expected in the accumulator
-                                            source.into_affine().map_err(|e| e.into()).and_then(
-                                                |source| {
-                                                    if source.is_zero() {
-                                                        Err(DeserializationError::PointAtInfinity)
-                                                    } else {
-                                                        Ok(source)
-                                                    }
-                                                },
-                                            )
+                let res_affine = res
+                    .into_par_iter()
+                    .map(|source| {
+                        // If we're a participant, we don't need to check all of the
+                        // elements in the accumulator, which saves a lot of time.
+                        // The hash chain prevents this from being a problem: the
+                        // transcript guarantees that the accumulator was properly
+                        // formed.
+                        match checked {
+                            CheckForCorrectness::Yes => {
+                                // Points at infinity are never expected in the accumulator
+                                source
+                                    .into_affine()
+                                    .map_err(|e| e.into())
+                                    .and_then(|source| {
+                                        if source.is_zero() {
+                                            Err(DeserializationError::PointAtInfinity)
+                                        } else {
+                                            Ok(source)
                                         }
-                                        CheckForCorrectness::No => {
-                                            source.into_affine_unchecked().map_err(|e| e.into())
-                                        }
-                                    }
-                                } {
-                                    Ok(source) => {
-                                        *target = source;
-                                    }
-                                    Err(e) => {
-                                        *decoding_error.lock().unwrap() = Some(e);
-                                    }
-                                }
+                                    })
                             }
-                        });
-                    }
-                });
+                            CheckForCorrectness::No => {
+                                source.into_affine_unchecked().map_err(|e| e.into())
+                            }
+                        }
+                    })
+                    .collect::<Result<Vec<_>, DeserializationError>>()?;
 
-                match Arc::try_unwrap(decoding_error)
-                    .unwrap()
-                    .into_inner()
-                    .unwrap()
-                {
-                    Some(e) => Err(e),
-                    None => Ok(res_affine),
-                }
+                Ok(res_affine)
             }
 
             match compression {
