@@ -1,15 +1,16 @@
+use std::fs::OpenOptions;
+use std::io::{self, BufReader, BufWriter, Read, Write};
+
 use bellman::domain::{EvaluationDomain, Point};
 use bellman::gpu;
 use bellman::multicore::Worker;
 use groupy::{CurveAffine, CurveProjective};
+use log::info;
 use paired::bls12_381::{Bls12, G1, G2};
 use powersoftau::accumulator::*;
 use powersoftau::keypair::PublicKey;
 use powersoftau::parameters::{CheckForCorrectness, PowersOfTauParameters, UseCompression};
 use powersoftau::small_bls12_381::Bls12CeremonyParameters;
-
-use std::fs::OpenOptions;
-use std::io::{self, BufReader, BufWriter, Read, Write};
 
 fn into_hex(h: &[u8]) -> String {
     let mut f = String::new();
@@ -65,6 +66,8 @@ fn get_response_file_hash(
 }
 
 fn main() {
+    pretty_env_logger::init_timed();
+
     let lock = gpu::lock().expect("failed to aquire gpu lock");
 
     let mut fft_kern = {
@@ -76,9 +79,9 @@ fn main() {
         bellman::domain::gpu_fft_supported::<Bls12>(log_d).ok()
     };
     if fft_kern.is_some() {
-        println!("GPU FFT is supported!");
+        info!("GPU FFT is supported!");
     } else {
-        println!("GPU FFT is NOT supported!");
+        info!("GPU FFT is NOT supported!");
     }
 
     // Try to load `./challenge` from disk.
@@ -204,27 +207,27 @@ fn main() {
     //            &last_challenge_file_hash
     //        )
     //        {
-    //            println!(" ... FAILED");
+    //            info!(" ... FAILED");
     //            panic!("INVALID RESPONSE FILE!");
     //        } else {
-    //            println!("");
+    //            info!("");
     //        }
 
     //    current_accumulator = response_file_accumulator;
     //}
 
-    println!("Transcript OK!");
+    info!("Transcript OK!");
 
     let worker = &Worker::new();
 
     // Create the parameters for various 2^m circuit depths.
     for m in 27..28 {
         let paramname = format!("phase1radix2m{}", m);
-        println!("Creating {}", paramname);
+        info!("Creating {}", paramname);
 
         let degree = 1 << m;
 
-        println!("Creating g1_coeffs");
+        info!("Creating g1_coeffs");
 
         let mut g1_coeffs = EvaluationDomain::from_coeffs(
             current_accumulator.tau_powers_g1[0..degree]
@@ -233,7 +236,7 @@ fn main() {
                 .collect(),
         )
         .unwrap();
-        println!("Creating g2_coeffs");
+        info!("Creating g2_coeffs");
 
         let mut g2_coeffs = EvaluationDomain::from_coeffs(
             current_accumulator.tau_powers_g2[0..degree]
@@ -243,7 +246,7 @@ fn main() {
         )
         .unwrap();
 
-        println!("Creating g1_alpha_coeffs");
+        info!("Creating g1_alpha_coeffs");
         let mut g1_alpha_coeffs = EvaluationDomain::from_coeffs(
             current_accumulator.alpha_tau_powers_g1[0..degree]
                 .iter()
@@ -252,7 +255,7 @@ fn main() {
         )
         .unwrap();
 
-        println!("Creating g1_beta_coeffs");
+        info!("Creating g1_beta_coeffs");
         let mut g1_beta_coeffs = EvaluationDomain::from_coeffs(
             current_accumulator.beta_tau_powers_g1[0..degree]
                 .iter()
@@ -263,15 +266,15 @@ fn main() {
         //
         //        // This converts all of the elements into Lagrange coefficients
         //        // for later construction of interpolation polynomials
-        println!("Creating g1_coeffs_ifft");
+        info!("Creating g1_coeffs_ifft");
 
-        g1_coeffs.ifft(&worker, &mut fft_kern);
-        println!("Creating g2_coeffs_ifft");
-        g2_coeffs.ifft(&worker, &mut fft_kern);
-        println!("Creating g1_alpha_coeffs_ifft");
-        g1_alpha_coeffs.ifft(&worker, &mut fft_kern);
-        println!("Creating g1_beta_coeffs_ifft");
-        g1_beta_coeffs.ifft(&worker, &mut fft_kern);
+        g1_coeffs.ifft(&worker, &mut fft_kern).unwrap();
+        info!("Creating g2_coeffs_ifft");
+        g2_coeffs.ifft(&worker, &mut fft_kern).unwrap();
+        info!("Creating g1_alpha_coeffs_ifft");
+        g1_alpha_coeffs.ifft(&worker, &mut fft_kern).unwrap();
+        info!("Creating g1_beta_coeffs_ifft");
+        g1_beta_coeffs.ifft(&worker, &mut fft_kern).unwrap();
 
         let g1_coeffs = g1_coeffs.into_coeffs();
         let g2_coeffs = g2_coeffs.into_coeffs();
@@ -294,6 +297,7 @@ fn main() {
         let mut g1_beta_coeffs = g1_beta_coeffs.into_iter().map(|e| e.0).collect::<Vec<_>>();
 
         // Batch normalize
+        info!("Batch normalize");
         G1::batch_normalization(&mut g1_coeffs);
         G2::batch_normalization(&mut g2_coeffs);
         G1::batch_normalization(&mut g1_alpha_coeffs);
@@ -303,6 +307,7 @@ fn main() {
         // x^i * (x^m - 1) for i in 0..=(m-2) a.k.a.
         // x^(i + m) - x^i for i in 0..=(m-2)
         // for radix2 evaluation domains
+        info!("H query");
         let mut h = Vec::with_capacity(degree - 1);
         for i in 0..(degree - 1) {
             let mut tmp = current_accumulator.tau_powers_g1[i + degree].into_projective();
@@ -316,6 +321,7 @@ fn main() {
         // Batch normalize this as well
         G1::batch_normalization(&mut h);
 
+        info!("Writing results to disk");
         // Create the parameter file
         let writer = OpenOptions::new()
             .read(false)
