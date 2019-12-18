@@ -275,13 +275,9 @@ fn main() {
         assert_eq!(g1_beta_coeffs.len(), degree);
 
         // Remove the Point() wrappers
-
         let mut g1_coeffs = g1_coeffs.into_iter().map(|e| e.0).collect::<Vec<_>>();
-
         let mut g2_coeffs = g2_coeffs.into_iter().map(|e| e.0).collect::<Vec<_>>();
-
         let mut g1_alpha_coeffs = g1_alpha_coeffs.into_iter().map(|e| e.0).collect::<Vec<_>>();
-
         let mut g1_beta_coeffs = g1_beta_coeffs.into_iter().map(|e| e.0).collect::<Vec<_>>();
 
         // Batch normalize
@@ -353,7 +349,7 @@ fn main() {
         // Lagrange coefficients in G1 (for constructing
         // LC/IC queries and precomputing polynomials for A)
         let g1_coeffs_uncompressed: Vec<_> = g1_coeffs
-            .par_iter()
+            .into_par_iter()
             .map(|c| {
                 // Was normalized earlier in parallel
                 c.into_affine().into_uncompressed()
@@ -367,7 +363,7 @@ fn main() {
         // Lagrange coefficients in G2 (for precomputing
         // polynomials for B)
         let g2_coeffs_uncompressed: Vec<_> = g2_coeffs
-            .par_iter()
+            .into_par_iter()
             .map(|c| {
                 // Was normalized earlier in parallel
                 c.into_affine().into_uncompressed()
@@ -381,7 +377,7 @@ fn main() {
         // Lagrange coefficients in G1 with alpha (for
         // LC/IC queries)
         let g1_alpha_coeffs_uncompressed: Vec<_> = g1_alpha_coeffs
-            .par_iter()
+            .into_par_iter()
             .map(|c| {
                 // Was normalized earlier in parallel
                 c.into_affine().into_uncompressed()
@@ -395,7 +391,7 @@ fn main() {
         // Lagrange coefficients in G1 with beta (for
         // LC/IC queries)
         let g1_beta_coeffs_uncompressed: Vec<_> = g1_beta_coeffs
-            .par_iter()
+            .into_par_iter()
             .map(|c| {
                 // Was normalized earlier in parallel
                 c.into_affine().into_uncompressed()
@@ -408,7 +404,7 @@ fn main() {
 
         // Bases for H polynomial computation
         let h_uncompressed: Vec<_> = h
-            .par_iter()
+            .into_par_iter()
             .map(|c| {
                 // Was normalized earlier in parallel
                 c.into_affine().into_uncompressed()
