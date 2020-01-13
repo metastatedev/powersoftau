@@ -1,14 +1,13 @@
 [package]
 name = "powersoftau"
 version = "0.2.0"
-authors = ["Sean Bowe", "Alex Vlasov"]
+authors = ["Ariel Gabizon", "dignifiedquire", "Sean Bowe", "Alex Vlasov"]
 license = "MIT/Apache-2.0"
 edition = "2018"
 
 description = "Communal zk-SNARK MPC for Public Parameters"
-documentation = "https://docs.rs/powersoftau/"
-homepage = "https://github.com/matter-labs/powersoftau"
-repository = "https://github.com/matter-labs/powersoftau"
+homepage = "https://github.com/filecoin-project/powersoftau"
+repository = "https://github.com/filecoin-project/powersoftau"
 
 [dependencies]
 rand = "0.7"
@@ -31,5 +30,3 @@ log = "0.4.8"
 pretty_env_logger = "0.3.1"
 blake2b_simd = "0.5.9"
 
-[patch.crates-io]
-bellperson = { git = "https://github.com/filecoin-project/bellman", branch = "master" }
