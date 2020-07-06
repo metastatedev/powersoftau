@@ -202,7 +202,7 @@ fn main() {
     let lock = gpu::lock().expect("failed to aquire gpu lock");
 
     // Create the parameters for various 2^m circuit depths.
-    for m in 0..28 {
+    for m in 0..=Bls12CeremonyParameters::REQUIRED_POWER {
         let paramname = format!("phase1radix2m{}", m);
         info!("\n\nCreating {}", paramname);
 
