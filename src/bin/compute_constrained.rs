@@ -190,7 +190,7 @@ fn main() {
     )
     .expect("must transform with the key");
 
-    println!("Finihsing writing your contribution to `./response`...");
+    println!("Finishing writing your contribution to `./response`...");
 
     // Write the public key
     pubkey
